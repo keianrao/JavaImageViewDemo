@@ -3,6 +3,8 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.awt.image.BufferedImage;
 import java.awt.Graphics;
 import java.awt.event.KeyListener;
@@ -19,6 +21,7 @@ class JavaImageViewDemo implements KeyListener {
 private JFrame mainframe;
 private ImageView imageView;
 private JFileChooser fileChooser;
+private Timer timer;
 
 private BufferedImage image;
 
@@ -27,7 +30,7 @@ private BufferedImage image;
 public void keyPressed(KeyEvent eK) {
 	// We should get a menubar instead, actually..
 	if (eK.getKeyCode() == KeyEvent.VK_F1) {
-		if (fileChooser.showOpenDialog(mainframe) 
+		if (fileChooser.showOpenDialog(mainframe)
 				== JFileChooser.APPROVE_OPTION) try {
 			image = ImageIO.read(fileChooser.getSelectedFile());
 		}
@@ -35,10 +38,22 @@ public void keyPressed(KeyEvent eK) {
 			JOptionPane.showMessageDialog(
 				mainframe,
 				"Could not open file!",
-				"Sorry! Our image loader says it had a problem loading the file you selected..",
+				"Sorry, our image loader says it had a problem loading the file you selected..",
 				JOptionPane.ERROR_MESSAGE
 			);
 			eIo.printStackTrace(System.err);
+		}
+		
+		if (image != null) {
+			setCaption(fileChooser.getSelectedFile().getName());
+		}
+		else {
+			JOptionPane.showMessageDialog(
+				mainframe,
+				"No image loaded!",
+				"Our image loader didn't extract any image from the file..",
+				JOptionPane.INFORMATION_MESSAGE
+			);
 		}
 	}
 }
@@ -70,7 +85,9 @@ private JavaImageViewDemo() {
 	
 	mainframe.setVisible(true);
 	
-	// We need to set up a timer, which will call for repaints.
+	timer = new Timer();
+	final int FPS = 24;
+	timer.schedule(new RepainterTask(), 0, 1000 / FPS);
 }
 
 //  \\  //  \\  //  \\  //  \\  //  \\
@@ -78,20 +95,30 @@ private JavaImageViewDemo() {
 public static void main(String... args) {
 	new JavaImageViewDemo();
 }
-	
+
 //  \\  //  \\  //  \\  //  \\  //  \\	
 
 private class ImageView extends JPanel implements KeyListener, ComponentListener {
 	int topLeftX, topLeftY;
-	int width, height;	
+	int width, height;
+	int xOffset, yOffset;
 	int xSpeed, ySpeed;
 	double aspectRatio;
 	int zoomSpeed;
+	boolean noImageLastRepaint = true;
 	
 	//  \\  //  \\  //  \\  //  \\  //  \\
 
 	public void paintComponent(Graphics g) {	
-		if (image == null) return;
+		if (JavaImageViewDemo.this.image == null) {
+			noImageLastRepaint = true;
+			return;
+		}
+		
+		if (noImageLastRepaint) {
+			width = ImageView.this.getWidth();
+			height = ImageView.this.getHeight();
+		}
 	
 		// If zooming in, update width and height.
 		if (zoomSpeed != 0) {
@@ -128,9 +155,6 @@ private class ImageView extends JPanel implements KeyListener, ComponentListener
 			}
 		}
 		
-		// What if image is smaller than our window?
-		// We should centre it.
-		
 		// Okay, done adjusting. Render current frame
 		g.drawImage(
 			(JavaImageViewDemo.this).image,
@@ -148,16 +172,16 @@ private class ImageView extends JPanel implements KeyListener, ComponentListener
 	public void keyPressed(KeyEvent eK) {
 		switch (eK.getKeyCode()) {
 			case KeyEvent.VK_UP:
-				ySpeed = -8;
+				ySpeed = -1;
 				break;		
 			case KeyEvent.VK_DOWN:
-				ySpeed = 8;
+				ySpeed = 1;
 				break;
 			case KeyEvent.VK_LEFT:
-				xSpeed = -8;
+				xSpeed = -1;
 				break;
 			case KeyEvent.VK_RIGHT:
-				xSpeed = 8;
+				xSpeed = 1;
 				break;
 			case KeyEvent.VK_R:
 				zoomSpeed = 1;
@@ -195,6 +219,12 @@ private class ImageView extends JPanel implements KeyListener, ComponentListener
 		this.addComponentListener(this);
 		this.addKeyListener(this);
 		setFocusable(true);
+	}
+}
+
+private class RepainterTask extends TimerTask {
+	public void run() {
+		imageView.repaint();
 	}
 }
 
