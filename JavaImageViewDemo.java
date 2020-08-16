@@ -33,27 +33,27 @@ public void keyPressed(KeyEvent eK) {
 		if (fileChooser.showOpenDialog(mainframe)
 				== JFileChooser.APPROVE_OPTION) try {
 			image = ImageIO.read(fileChooser.getSelectedFile());
+			
+			if (image != null) {
+				setCaption(fileChooser.getSelectedFile().getName());
+			}
+			else {
+				JOptionPane.showMessageDialog(
+					mainframe,
+					"Our image loader didn't extract any image from the file..",
+					"No image loaded!",
+					JOptionPane.INFORMATION_MESSAGE
+				);
+			}
 		}
 		catch (IOException eIo) {
 			JOptionPane.showMessageDialog(
 				mainframe,
-				"Could not open file!",
 				"Sorry, our image loader says it had a problem loading the file you selected..",
+				"Could not open file!",
 				JOptionPane.ERROR_MESSAGE
 			);
 			eIo.printStackTrace(System.err);
-		}
-		
-		if (image != null) {
-			setCaption(fileChooser.getSelectedFile().getName());
-		}
-		else {
-			JOptionPane.showMessageDialog(
-				mainframe,
-				"No image loaded!",
-				"Our image loader didn't extract any image from the file..",
-				JOptionPane.INFORMATION_MESSAGE
-			);
 		}
 	}
 }
@@ -86,7 +86,7 @@ private JavaImageViewDemo() {
 	mainframe.setVisible(true);
 	
 	timer = new Timer();
-	final int FPS = 24;
+	final int FPS = 30;
 	timer.schedule(new RepainterTask(), 0, 1000 / FPS);
 }
 
@@ -118,15 +118,14 @@ private class ImageView extends JPanel implements KeyListener, ComponentListener
 		if (noImageLastRepaint) {
 			width = ImageView.this.getWidth();
 			height = ImageView.this.getHeight();
+			noImageLastRepaint = false;
 		}
 	
 		// If zooming in, update width and height.
 		if (zoomSpeed != 0) {
-			width -= zoomSpeed;			
-			if (width < aspectRatio) {
-				width = (int)Math.floor(aspectRatio);
-				// So if our aspect ratio is 16:9, 
-				// our minimum width is 16.
+			width -= zoomSpeed;
+			if (width < 1) {
+				width = 1;
 			}
 			if (width > image.getWidth()) {
 				width = image.getWidth();
@@ -159,7 +158,7 @@ private class ImageView extends JPanel implements KeyListener, ComponentListener
 		g.drawImage(
 			(JavaImageViewDemo.this).image,
 			0, 0, getWidth(), getHeight(),
-			topLeftX, topLeftY, width, height,
+			topLeftX, topLeftY, topLeftX + width, topLeftY + height,
 			this
 		);
 	}
