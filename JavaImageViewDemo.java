@@ -25,6 +25,9 @@ private Timer timer;
 
 private BufferedImage image;
 
+private static final int FPS = 30, X_SPEED = 8, Y_SPEED = 8, ZOOM_SPEED = 8;
+
+
 //  \\  //  \\  //  \\  //  \\  //  \\
 
 public void keyPressed(KeyEvent eK) {
@@ -86,7 +89,6 @@ private JavaImageViewDemo() {
 	mainframe.setVisible(true);
 	
 	timer = new Timer();
-	final int FPS = 30;
 	timer.schedule(new RepainterTask(), 0, 1000 / FPS);
 }
 
@@ -102,9 +104,9 @@ private class ImageView extends JPanel implements KeyListener, ComponentListener
 	int topLeftX, topLeftY;
 	int width, height;
 	int xOffset, yOffset;
-	int xSpeed, ySpeed;
+	int xMovement, yMovement;
 	double aspectRatio;
-	int zoomSpeed;
+	int zoomMovement;
 	boolean noImageLastRepaint = true;
 	
 	//  \\  //  \\  //  \\  //  \\  //  \\
@@ -122,21 +124,22 @@ private class ImageView extends JPanel implements KeyListener, ComponentListener
 		}
 	
 		// If zooming in, update width and height.
-		if (zoomSpeed != 0) {
-			width -= zoomSpeed;
+		if (zoomMovement != 0) {
+			width -= zoomMovement * ZOOM_SPEED;
 			if (width < 1) {
 				width = 1;
 			}
-			if (width > image.getWidth()) {
-				width = image.getWidth();
+
+			height = (int)Math.floor(width / aspectRatio);			
+			if (height > image.getHeight()) {
+				height = image.getHeight();
+				width = (int)Math.floor(height * aspectRatio);
 			}
-		
-			height = (int)Math.floor(width / aspectRatio);
 		}
 		
 		// If moving around, update topLeftX and topLeftY.
-		if (xSpeed != 0) {
-			topLeftX += xSpeed;
+		if (xMovement != 0) {
+			topLeftX += xMovement * X_SPEED;
 			if (topLeftX < 0) {
 				topLeftX = 0;
 			}
@@ -144,12 +147,12 @@ private class ImageView extends JPanel implements KeyListener, ComponentListener
 				topLeftX = image.getWidth() - width;
 			}
 		}		
-		if (ySpeed != 0) {
-			topLeftY += ySpeed;
+		if (yMovement != 0) {
+			topLeftY += yMovement * Y_SPEED;
 			if (topLeftY < 0) {
 				topLeftY = 0;
 			}
-			if ((topLeftY + width) > image.getHeight()) {
+			if ((topLeftY + height) > image.getHeight()) {
 				topLeftY = image.getHeight() - height;
 			}
 		}
@@ -171,22 +174,22 @@ private class ImageView extends JPanel implements KeyListener, ComponentListener
 	public void keyPressed(KeyEvent eK) {
 		switch (eK.getKeyCode()) {
 			case KeyEvent.VK_UP:
-				ySpeed = -1;
+				yMovement = -1;
 				break;		
 			case KeyEvent.VK_DOWN:
-				ySpeed = 1;
+				yMovement = 1;
 				break;
 			case KeyEvent.VK_LEFT:
-				xSpeed = -1;
+				xMovement = -1;
 				break;
 			case KeyEvent.VK_RIGHT:
-				xSpeed = 1;
+				xMovement = 1;
 				break;
 			case KeyEvent.VK_R:
-				zoomSpeed = 1;
+				zoomMovement = 1;
 				break;
 			case KeyEvent.VK_F:
-				zoomSpeed = -1;
+				zoomMovement = -1;
 				break;
 		}
 	}
@@ -194,15 +197,15 @@ private class ImageView extends JPanel implements KeyListener, ComponentListener
 		switch (eK.getKeyCode()) {
 			case KeyEvent.VK_UP:
 			case KeyEvent.VK_DOWN:
-				ySpeed = 0;
+				yMovement = 0;
 				break;
 			case KeyEvent.VK_LEFT:
 			case KeyEvent.VK_RIGHT:
-				xSpeed = 0;
+				xMovement = 0;
 				break;
 			case KeyEvent.VK_R:
 			case KeyEvent.VK_F:
-				zoomSpeed = 0;
+				zoomMovement = 0;
 				break;
 		}
 	}
@@ -224,6 +227,8 @@ private class ImageView extends JPanel implements KeyListener, ComponentListener
 private class RepainterTask extends TimerTask {
 	public void run() {
 		imageView.repaint();
+		java.awt.Toolkit.getDefaultToolkit().sync();
+		// Unix X11-specific measure
 	}
 }
 
